@@ -1,0 +1,21 @@
+<!doctype html>
+	<head>
+		<meta charset="utf-8">
+		<title>DogClassifier</title>
+	</head>
+
+	<body>
+		<h1>DogClassifier</h1>
+
+		{% if cls %}
+		    <img src="{{ pic }}">
+		    <h3>I think it's {{ cls }}</h3>
+		{% endif %}
+
+		<form action="{{ url_for('predict') }}" method="POST" enctype="multipart/form-data">
+			<input type="file" name="file">
+			<input type="submit" value="Predict">
+        </form>
+
+	</body>
+</html>
