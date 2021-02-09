@@ -1,4 +1,4 @@
-"""Dog breed classifier"""
+"""Dog breed classification model"""
 
 import torch
 import torchvision.models as models
@@ -7,6 +7,8 @@ from PIL import Image
 
 
 class DogClassifier:
+    """Neural network for predicting one of 133 classes of dog breeds"""
+
     with open('dogs', 'r') as f:
         names = f.read().split('\n')
 
