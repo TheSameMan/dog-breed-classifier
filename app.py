@@ -1,4 +1,4 @@
-"Dog classifier application"
+"Application for classifying dog breeds (133 classes)"
 import os
 from flask import Flask, request
 from flask.templating import render_template
@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def predict():
-    """classification"""
+    """classification endpoint"""
 
     cls, file, pic = '', '', ''
     if request.method == 'POST':
@@ -26,4 +26,6 @@ def predict():
 
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
+    del model
+    del app
