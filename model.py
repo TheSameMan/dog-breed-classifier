@@ -1,44 +1,62 @@
 """Dog breed classification model"""
 
-import torch
-import torchvision.models as models
-from torchvision import transforms
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
+from torch.nn import BatchNorm1d, Linear
+from torch import load
+from torchvision.models import mobilenet_v3_large
+from torchvision.transforms import (Compose, Resize, CenterCrop, ToTensor,
+                                    Normalize)
 
 
 class DogClassifier:
     """Neural network for predicting one of 133 classes of dog breeds"""
-
-    with open('dogs', 'r') as f:
-        names = f.read().split('\n')
-
     def __init__(self):
-        self.model = models.resnet50(pretrained=True)
+        self.model = mobilenet_v3_large(pretrained=True)
 
         for param in self.model.parameters():
             param.requires_grad = False
 
-        self.model.fc = torch.nn.Linear(2048, 133, bias=True)
+        self.model.classifier[2] = BatchNorm1d(1280)
+        self.model.classifier[3] = Linear(1280, 133, bias=True)
 
-        map_location = torch.device('cpu')
+        self.error = None
+        try:
+            with open('dogs', 'r') as file:
+                self.names = file.read().split('\n')
+        except FileNotFoundError:
+            self.error = 'No dogs file'
+        else:
+            try:
+                map_location = 'cpu'
+                self.model.load_state_dict(
+                    load('mobilenet_model.pt', map_location=map_location))
 
-        self.model.load_state_dict(
-            torch.load('dog_breed_classifier.pt', map_location=map_location))
-        self.model.eval()
+                self.model.eval()
+            except FileNotFoundError:
+                self.error = 'No model file'
 
     def __prepare_image(self, img_path):
-        image = Image.open(img_path, 'r')
+        with Image.open(img_path, 'r') as image:
+            tform = Compose([
+                Resize(256),
+                CenterCrop(227),
+                ToTensor(),
+                Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
 
-        tform = transforms.Compose([transforms.Resize(256),
-                                    transforms.CenterCrop(224),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize(
-                                        mean=[0.485, 0.456, 0.406],
-                                        std=[0.229, 0.224, 0.225])])
+            return tform(image).float().unsqueeze(0)
 
-        return tform(image).float().unsqueeze(0)
+    def __call__(self, file_path):
+        if (self.error == 'No dogs file') or (self.error == 'No model file'):
+            return None
 
-    def predict(self, file_path):
-        class_num = \
-            self.model.forward(self.__prepare_image(file_path)).max(1)[1]
-        return DogClassifier.names[class_num]
+        self.error = None
+        try:
+            class_num = \
+                self.model.forward(self.__prepare_image(file_path)).max(1)[1]
+            return self.names[class_num]
+        except (TypeError, UnidentifiedImageError):
+            self.error = 'Wrong file format'
+            return None
+
+    def __repr__(self):
+        return f'DogClassifier: {self.model.__repr__()}'
