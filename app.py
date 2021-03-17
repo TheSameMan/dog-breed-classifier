@@ -12,17 +12,18 @@ app = Flask(__name__)
 def predict():
     """classification endpoint"""
 
-    cls, file, pic = '', '', ''
     if request.method == 'POST':
         req = request.files['file']
+        file_path = None
         if req:
             file_path = os.path.join('static/img/', req.filename)
             req.save(file_path)
-            cls = model.predict(file_path)
-            file = req.filename
-            pic = file_path
 
-    return render_template('predict.html', cls=cls, file=file, pic=pic)
+            return render_template('predict.html', cls=model(file_path),
+                                   pic=file_path, file=req.filename,
+                                   error=model.error)
+
+    return render_template('predict.html')
 
 
 if __name__ == '__main__':
